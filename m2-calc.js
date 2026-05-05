@@ -9,10 +9,11 @@ var YM_ID = 108662561;
 var prices = {cosmetic:6500, comfort:14000, design:22000};
 var typeMult = {studio:1, '1k':1, '2k':1.05, '3k':1.1, '4k':1.2};
 var condMult = {rough:1, pre:0.85, old:1.15, cosmetic:0.5};
-var terms = {cosmetic:'14-30', comfort:'60-75', design:'90-120'};
+var terms = {cosmetic:'14-30', comfort:'60-75', design:'75-100'};
 var typeNames = {studio:'Студия','1k':'1-комнатная','2k':'2-комнатная','3k':'3-комнатная','4k':'4+ комнат'};
 var condNames = {rough:'Новостройка черновая',pre:'Новостройка предчистовая',old:'Вторичка со старым ремонтом',cosmetic:'Косметика без капремонта'};
-var repairNames = {cosmetic:'Косметический', comfort:'Комфорт', design:'Дизайнерский'};
+var repairNames = {cosmetic:'Косметический',comfort:'Комфорт',design:'Дизайнерский'};
+
 var step = 0, started = false;
 var data = {type:null, area:50, condition:null, repair:null};
 
@@ -107,10 +108,8 @@ var btns2=content.querySelectorAll('.m2c-opt');
 for(var l=0;l<btns2.length;l++) btns2[l].onclick=pickHandler('condition');
 
 } else if(step===3){
-html+='<p class="m2c-lbl">Шаг 4 из 4</p><h3 class="m2c-h">Тип ремонта</h3><div class="m2c-opts g2">';
-var r=[['cosmetic','Косметический','от 6 500 \u20BD/м\u00B2 \u00B7 обои, покраска, пол'],
-       ['comfort','Комфорт','от 14 000 \u20BD/м\u00B2 \u00B7 полный ремонт под ключ'],
-       ['design','Дизайнерский','от 22 000 \u20BD/м\u00B2 \u00B7 авторский 3D-проект']];
+html+='<p class="m2c-lbl">Шаг 4 из 4</p><h3 class="m2c-h">Тип ремонта</h3><div class="m2c-opts g3">';
+var r=[['cosmetic','Косметический','от 6 500 \u20BD/м\u00B2 \u00B7 обои, покраска, пол'],['comfort','Комфорт','от 14 000 \u20BD/м\u00B2 \u00B7 полный ремонт под ключ'],['design','Дизайнерский','от 22 000 \u20BD/м\u00B2 \u00B7 авторский 3D-проект']];
 for(var m=0;m<r.length;m++){
 var sel3=data.repair===r[m][0]?' sel':'';
 html+='<button class="m2c-opt m2c-opt-row'+sel3+'" data-v="'+r[m][0]+'"><div><div class="m2c-opt-t">'+r[m][1]+'</div><div class="m2c-opt-d">'+r[m][2]+'</div></div></button>';
