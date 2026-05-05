@@ -12,8 +12,7 @@ var condMult = {rough:1, pre:0.85, old:1.15, cosmetic:0.5};
 var terms = {cosmetic:'14-30', comfort:'60-75', design:'90-120'};
 var typeNames = {studio:'Студия','1k':'1-комнатная','2k':'2-комнатная','3k':'3-комнатная','4k':'4+ комнат'};
 var condNames = {rough:'Новостройка черновая',pre:'Новостройка предчистовая',old:'Вторичка со старым ремонтом',cosmetic:'Косметика без капремонта'};
-var repairNames = {cosmetic:'Косметический',comfort:'Комфорт',premium:'Премиум',design:'Дизайнерский'};
-
+var repairNames = {cosmetic:'Косметический', comfort:'Комфорт', design:'Дизайнерский'};
 var step = 0, started = false;
 var data = {type:null, area:50, condition:null, repair:null};
 
