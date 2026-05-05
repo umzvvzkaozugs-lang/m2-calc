@@ -17,6 +17,13 @@ var repairNames = {cosmetic:'Косметический',comfort:'Комфорт
 var step = 0, started = false;
 var data = {type:null, area:50, condition:null, repair:null};
 
+if(!document.getElementById('m2c-spinner-style')){
+var s=document.createElement('style');
+s.id='m2c-spinner-style';
+s.textContent='@keyframes m2cSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}} .m2c-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:m2cSpin .8s linear infinite;vertical-align:middle;margin-right:8px}';
+document.head.appendChild(s);
+}
+
 function ymGoal(n){if(typeof ym!=='undefined'){try{ym(YM_ID,'reachGoal',n);}catch(e){}}}
 function fmt(n){return n.toLocaleString('ru-RU');}
 function calc(){
@@ -140,6 +147,7 @@ html+='<input type="text" name="name" placeholder="Ваше имя" required>';
 html+='<input type="tel" name="phone" placeholder="Телефон для связи" required>';
 html+='<label class="m2c-agree"><input type="checkbox" id="m2c-agree-cb" checked><span class="m2c-agree-t">Нажимая кнопку, я соглашаюсь с <a href="https://m2-nvrsk.ru/politika-konfidencialnosti" target="_blank">политикой конфиденциальности</a> и даю согласие на обработку персональных данных</span></label>';
 html+='<button type="submit" class="m2c-submit" id="m2c-submit">Получить точный расч\u0451т</button>';
+html+='<p class="m2c-r-note" id="m2c-form-status" style="margin-top:8px;display:none"></p>';
 html+='</form></div>';
 content.innerHTML=html;
 back.style.display='block';
@@ -153,18 +161,52 @@ next.style.display='none';
 }
 }
 
+function sendRequest(payload){
+return new Promise(function(resolve, reject){
+var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+var timeoutId = setTimeout(function(){
+if(ctrl) ctrl.abort();
+reject(new Error('timeout'));
+}, 15000);
+
+var opts = {
+method:'POST',
+headers:{'Content-Type':'application/json','Accept':'application/json'},
+body:JSON.stringify(payload)
+};
+if(ctrl) opts.signal = ctrl.signal;
+
+fetch(WEBHOOK, opts)
+.then(function(r){
+clearTimeout(timeoutId);
+if(r.ok || r.status===200) resolve(true);
+else reject(new Error('http_'+r.status));
+})
+.catch(function(err){
+clearTimeout(timeoutId);
+reject(err);
+});
+});
+}
+
 function submitForm(e){
 e.preventDefault();
 var f=e.target;
 var name=f.name.value.trim();
 var phone=f.phone.value.trim();
 var agree=document.getElementById('m2c-agree-cb').checked;
-if(name.length<2){alert('Введите имя'); return;}
-if(phone.length<10){alert('Введите корректный телефон'); return;}
-if(!agree){alert('Необходимо согласие на обработку персональных данных'); return;}
+var status=document.getElementById('m2c-form-status');
+if(name.length<2){status.style.display='block'; status.textContent='Пожалуйста, введите имя'; status.style.color='#ef4444'; return;}
+if(phone.length<10){status.style.display='block'; status.textContent='Пожалуйста, введите корректный телефон'; status.style.color='#ef4444'; return;}
+if(!agree){status.style.display='block'; status.textContent='Необходимо согласие на обработку персональных данных'; status.style.color='#ef4444'; return;}
+
 var btn=document.getElementById('m2c-submit');
 btn.disabled=true;
-btn.textContent='Отправляем...';
+btn.innerHTML='<span class="m2c-spinner"></span>Отправляем заявку...';
+status.style.display='block';
+status.style.color='rgba(255,255,255,.6)';
+status.textContent='Это может занять до 10 секунд, пожалуйста подождите...';
+
 var rs=calc();
 var payload={
 _subject:'Заявка с калькулятора - M2 Новороссийск',
@@ -181,10 +223,33 @@ _captcha:'false',
 'Источник':'Калькулятор сайта',
 'UTM':'utm_source=calculator&utm_medium=site_form'
 };
-fetch(WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)})
-.then(function(r){return r.json();})
-.then(function(){ymGoal('calculator_form_submit'); ymGoal('calculator_complete'); step=5; render();})
-.catch(function(){btn.disabled=false; btn.textContent='Получить точный расч\u0451т'; alert('Не удалось отправить заявку. Позвоните: +7 900 292 3615');});
+
+function success(){
+ymGoal('calculator_form_submit');
+ymGoal('calculator_complete');
+step=5;
+render();
+}
+
+function showError(msg){
+btn.disabled=false;
+btn.innerHTML='Получить точный расч\u0451т';
+status.style.color='#ef4444';
+status.textContent=msg;
+}
+
+sendRequest(payload)
+.then(success)
+.catch(function(err1){
+status.textContent='Повторяем отправку...';
+setTimeout(function(){
+sendRequest(payload)
+.then(success)
+.catch(function(err2){
+showError('Не удалось отправить. Позвоните: +7 900 292 3615');
+});
+}, 1500);
+});
 }
 
 document.getElementById('m2c-back').onclick=function(){if(step>0){step--; render();}};
