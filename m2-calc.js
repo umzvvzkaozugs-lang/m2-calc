@@ -108,7 +108,7 @@ for(var l=0;l<btns2.length;l++) btns2[l].onclick=pickHandler('condition');
 
 } else if(step===3){
 html+='<p class="m2c-lbl">Шаг 4 из 4</p><h3 class="m2c-h">Тип ремонта</h3><div class="m2c-opts g2">';
-var r=[['cosmetic','Косметический','от 6 500 \u20BD/м\u00B2 \u00B7 обои, покраска, пол'],['comfort','Комфорт','от 14 000 \u20BD/м\u00B2 \u00B7 полный ремонт под ключ'],['premium','Премиум','от 22 000 \u20BD/м\u00B2 \u00B7 премиальные материалы'],['design','Дизайнерский','от 32 000 \u20BD/м\u00B2 \u00B7 авторский 3D-проект']];
+var r=[['cosmetic','Косметический','от 6 500 \u20BD/м\u00B2 \u00B7 обои, покраска, пол'],['comfort','Комфорт','от 14 000 \u20BD/м\u00B2 \u00B7 полный ремонт под ключ'],['design','Дизайнерский','от 22 000 \u20BD/м\u00B2 \u00B7 авторский 3D-проект']];
 for(var m=0;m<r.length;m++){
 var sel3=data.repair===r[m][0]?' sel':'';
 html+='<button class="m2c-opt m2c-opt-row'+sel3+'" data-v="'+r[m][0]+'"><div><div class="m2c-opt-t">'+r[m][1]+'</div><div class="m2c-opt-d">'+r[m][2]+'</div></div></button>';
