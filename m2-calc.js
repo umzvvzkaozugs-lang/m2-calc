@@ -4,18 +4,19 @@ function init(){
   if(!document.getElementById('m2c-root')) return;
   window.m2cReady = true;
 
-  var TAPTOP_FORM_ANKETA_ID = '174739516';
+  var WEBHOOK = 'https://formsubmit.co/ajax/daovladimir_01@mail.ru';
   var YM_ID = 108662561;
   var prices = {cosmetic:6500, comfort:14000, design:22000};
   var typeMult = {studio:1, '1k':1, '2k':1.05, '3k':1.1, '4k':1.2};
   var condMult = {rough:1, pre:0.85, old:1.15, cosmetic:0.5};
   var terms = {cosmetic:'14-30', comfort:'60-75', design:'75-100'};
   var typeNames = {studio:'Студия','1k':'1-комнатная','2k':'2-комнатная','3k':'3-комнатная','4k':'4+ комнат'};
-  var condNames = {rough:'новостройка черновая',pre:'предчистовая',old:'вторичка со старым ремонтом',cosmetic:'косметика'};
+  var condNames = {rough:'Новостройка черновая',pre:'Новостройка предчистовая',old:'Вторичка со старым ремонтом',cosmetic:'Косметика без капремонта'};
   var repairNames = {cosmetic:'Косметический',comfort:'Комфорт',design:'Дизайнерский'};
 
   var step = 0, started = false;
   var data = {type:null, area:50, condition:null, repair:null};
+  var lastResult = null;
 
   if(!document.getElementById('m2c-spinner-style')){
     var s=document.createElement('style');
@@ -134,6 +135,7 @@ function init(){
     } else if(step===4){
       ymGoal('calculator_result_shown');
       var rs=calc();
+      lastResult=rs;
       html+='<div class="m2c-result">';
       html+='<p class="m2c-r-lbl">Стоимость вашего ремонта</p>';
       html+='<p class="m2c-r-price">'+fmt(rs.min)+' \u2014 '+fmt(rs.max)+' \u20BD</p>';
@@ -156,119 +158,51 @@ function init(){
       document.getElementById('m2c-form').onsubmit=submitForm;
 
     } else if(step===5){
-      content.innerHTML='<div class="m2c-success"><div class="m2c-s-icon">\u2713</div><h3 class="m2c-s-t">Спасибо! Заявка отправлена</h3><p class="m2c-s-x">Менеджер свяжется с вами в течение 15 минут и рассчитает точную стоимость.</p></div>';
+      var rs2 = lastResult || {min:0,max:0,term:'-'};
+      html+='<div class="m2c-success">';
+      html+='<div class="m2c-s-icon">\u2713</div>';
+      html+='<h3 class="m2c-s-t">Спасибо! Заявка принята</h3>';
+      html+='<p class="m2c-s-x">Менеджер свяжется с вами в течение 15 минут и рассчитает точную стоимость.</p>';
+      html+='<p class="m2c-s-x" style="margin-top:12px;font-size:14px;opacity:.7">Если вам удобнее \u2014 позвоните сами:<br><a href="tel:+79002923615" style="color:inherit;font-weight:600;font-size:18px">+7 900 292 3615</a></p>';
+      html+='</div>';
+      content.innerHTML=html;
       back.style.display='none';
       next.style.display='none';
     }
   }
 
-  function fireInputEvents(input){
-    try { input.dispatchEvent(new Event('input', {bubbles:true})); } catch(e){}
-    try { input.dispatchEvent(new Event('change', {bubbles:true})); } catch(e){}
-    try { input.dispatchEvent(new Event('blur', {bubbles:true})); } catch(e){}
-  }
-
-  function findTaptopForm(){
-    return document.querySelector('form[data-s3-anketa-id="' + TAPTOP_FORM_ANKETA_ID + '"]');
-  }
-
- function forceShowPopup(form){
-  // Tap-top скрывает поп-ап через display:none на родительском .pop-up.
-  // Чтобы submit прошёл, поп-ап должен быть display:flex.
-  // Делаем его видимым, но прозрачным и за экраном — клиент не увидит.
-  var popup = form.closest('.pop-up') || form.closest('[class*="pop-up"]');
-  if(!popup) return null;
-
-  var saved = {
-    display: popup.style.display,
-    visibility: popup.style.visibility,
-    opacity: popup.style.opacity,
-    pointerEvents: popup.style.pointerEvents,
-    position: popup.style.position,
-    left: popup.style.left,
-    top: popup.style.top,
-    zIndex: popup.style.zIndex
-  };
-
-  // Делаем поп-ап технически видимым, но не видным для пользователя
-  popup.style.display = 'flex';
-  popup.style.visibility = 'hidden';
-  popup.style.opacity = '0';
-  popup.style.pointerEvents = 'none';
-  popup.style.position = 'fixed';
-  popup.style.left = '-9999px';
-  popup.style.top = '-9999px';
-  popup.style.zIndex = '-1';
-
-  return {popup: popup, saved: saved};
-}
-
-function restorePopup(state){
-  if(!state) return;
-  var p = state.popup, s = state.saved;
-  // Возвращаем поп-ап в скрытое состояние, чтобы клиент его не увидел при перезагрузке
-  p.style.display = 'none';
-  p.style.visibility = s.visibility || '';
-  p.style.opacity = s.opacity || '';
-  p.style.pointerEvents = s.pointerEvents || '';
-  p.style.position = s.position || '';
-  p.style.left = s.left || '';
-  p.style.top = s.top || '';
-  p.style.zIndex = s.zIndex || '';
-}
-
-function submitViaTaptop(name, phone, calcText){
-  var form = findTaptopForm();
-  if(!form) return false;
-
-  // 1. Открываем поп-ап «технически» — делаем его видимым для submit, но невидимым для глаза
-  var popupState = forceShowPopup(form);
-
-  // 2. Находим поля
-  var nameInput = form.querySelector('[data-type-field="text"] input');
-  var emailField = form.querySelector('[data-type-field="email"] input');
-  var phoneInput = form.querySelector('[data-type-field="phone"] input');
-
-  if(!nameInput || !emailField || !phoneInput){
-    if(popupState) restorePopup(popupState);
-    return false;
-  }
-
-  // 3. Заполняем поля
-  nameInput.value = name;
-  fireInputEvents(nameInput);
-
-  try { emailField.setAttribute('type','text'); } catch(e){}
-  try { emailField.removeAttribute('required'); } catch(e){}
-  emailField.value = calcText;
-  fireInputEvents(emailField);
-
-  phoneInput.value = phone;
-  fireInputEvents(phoneInput);
-
-  // 4. Сабмит
-  var submitBtn = form.querySelector('button[type="submit"]');
-  var submitted = false;
-
-  if(submitBtn){
-    submitBtn.click();
-    submitted = true;
-  } else {
+  function sendInBackground(payload){
+    // Fire-and-forget. Не ждём ответа, не показываем ошибки клиенту.
+    // FormSubmit обычно отвечает за 5-30 сек, нам это не важно — мы уже показали "Спасибо".
     try {
-      if(typeof form.requestSubmit === 'function') form.requestSubmit();
-      else form.submit();
-      submitted = true;
+      var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timeoutId = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 25000);
+
+      var opts = {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify(payload),
+        keepalive: true
+      };
+      if(ctrl) opts.signal = ctrl.signal;
+
+      fetch(WEBHOOK, opts).then(function(r){
+        clearTimeout(timeoutId);
+      }).catch(function(err){
+        clearTimeout(timeoutId);
+        // Если основной fetch упал — пробуем no-cors как страховку
+        try {
+          fetch(WEBHOOK, {
+            method:'POST',
+            mode:'no-cors',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payload),
+            keepalive: true
+          });
+        } catch(e){}
+      });
     } catch(e){}
   }
-
-  // 5. Через 3 сек прячем поп-ап обратно (Tap-top к этому времени должен обработать submit)
-  if(popupState){
-    setTimeout(function(){ restorePopup(popupState); }, 3000);
-  }
-
-  return submitted;
-}
-
 
   function submitForm(e){
     e.preventDefault();
@@ -282,20 +216,23 @@ function submitViaTaptop(name, phone, calcText){
     if(phone.length<10){status.style.display='block'; status.textContent='Пожалуйста, введите корректный телефон'; status.style.color='#ef4444'; return;}
     if(!agree){status.style.display='block'; status.textContent='Необходимо согласие на обработку персональных данных'; status.style.color='#ef4444'; return;}
 
-    var btn=document.getElementById('m2c-submit');
-    var origBtnHtml='Получить точный расч\u0451т';
-    btn.disabled=true;
-    btn.innerHTML='<span class="m2c-spinner"></span>Отправляем заявку...';
-    status.style.display='block';
-    status.style.color='rgba(255,255,255,.6)';
-    status.textContent='Отправляем, пожалуйста подождите...';
-
     var rs=calc();
-    var calcText = typeNames[data.type] + ', ' + data.area + 'м\u00B2, ' + condNames[data.condition]
-                 + ', ' + repairNames[data.repair]
-                 + '. ' + fmt(rs.min) + '-' + fmt(rs.max) + ' \u20BD, ' + rs.term + ' дн.';
+    var payload={
+      _subject:'Заявка с калькулятора - M2 Новороссийск',
+      _template:'table',
+      _captcha:'false',
+      'Имя':name,
+      'Телефон':phone,
+      'Тип квартиры':typeNames[data.type],
+      'Площадь':data.area+' м\u00B2',
+      'Состояние':condNames[data.condition],
+      'Тип ремонта':repairNames[data.repair],
+      'Расч\u0451тная стоимость':fmt(rs.min)+' \u2014 '+fmt(rs.max)+' \u20BD',
+      'Срок':rs.term+' дней',
+      'Источник':'Калькулятор сайта'
+    };
 
-    // Параметры расчёта в Метрику — менеджер увидит в карточке посетителя
+    // Параметры в Метрику
     ymParams({
       calculator: {
         type: typeNames[data.type],
@@ -304,28 +241,22 @@ function submitViaTaptop(name, phone, calcText){
         repair: repairNames[data.repair],
         price_min: rs.min,
         price_max: rs.max,
-        term: rs.term
+        term: rs.term,
+        client_name: name,
+        client_phone: phone
       }
     });
 
-    var ok = submitViaTaptop(name, phone, calcText);
+    // Цели
+    ymGoal('calculator_form_submit');
+    ymGoal('calculator_complete');
 
-    if(ok){
-      ymGoal('calculator_form_submit');
-      ymGoal('calculator_complete');
-      // Tap-top сам покажет своё success-состояние внутри своей формы.
-      // Мы у себя на калькуляторе показываем благодарность.
-      btn.disabled=false;
-      btn.innerHTML=origBtnHtml;
-      status.style.display='none';
-      step=5;
-      render();
-    } else {
-      btn.disabled=false;
-      btn.innerHTML=origBtnHtml;
-      status.style.color='#ef4444';
-      status.textContent='Не удалось отправить. Позвоните: +7 900 292 3615';
-    }
+    // Отправка в фоне — клиент не ждёт ответа
+    sendInBackground(payload);
+
+    // Сразу показываем "Спасибо" — это и есть главное исправление
+    step=5;
+    render();
   }
 
   document.getElementById('m2c-back').onclick=function(){if(step>0){step--; render();}};
