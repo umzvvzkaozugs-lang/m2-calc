@@ -4,14 +4,14 @@ function init(){
   if(!document.getElementById('m2c-root')) return;
   window.m2cReady = true;
 
-  var WEBHOOK = 'https://h.integrations-hub.ru/wh/27808/1lfe2eu/KdJwEabQEuLu4I_cSQ18hlHKGBEAUnyCyhkdsKCJdU0/';
+  var TAPTOP_FORM_ANKETA_ID = '174739516';
   var YM_ID = 108662561;
   var prices = {cosmetic:6500, comfort:14000, design:22000};
   var typeMult = {studio:1, '1k':1, '2k':1.05, '3k':1.1, '4k':1.2};
   var condMult = {rough:1, pre:0.85, old:1.15, cosmetic:0.5};
   var terms = {cosmetic:'14-30', comfort:'60-75', design:'75-100'};
   var typeNames = {studio:'Студия','1k':'1-комнатная','2k':'2-комнатная','3k':'3-комнатная','4k':'4+ комнат'};
-  var condNames = {rough:'Новостройка черновая',pre:'Новостройка предчистовая',old:'Вторичка со старым ремонтом',cosmetic:'Косметика без капремонта'};
+  var condNames = {rough:'новостройка черновая',pre:'предчистовая',old:'вторичка со старым ремонтом',cosmetic:'косметика'};
   var repairNames = {cosmetic:'Косметический',comfort:'Комфорт',design:'Дизайнерский'};
 
   var step = 0, started = false;
@@ -37,7 +37,7 @@ function init(){
       '1k':'<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="18" y1="4" x2="18" y2="32" stroke="currentColor" stroke-width="1.5"/></svg>',
       '2k':'<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="18" y1="4" x2="18" y2="32" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="18" x2="18" y2="18" stroke="currentColor" stroke-width="1.5"/></svg>',
       '3k':'<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="18" y1="4" x2="18" y2="32" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="14" x2="18" y2="14" stroke="currentColor" stroke-width="1.5"/><line x1="18" y1="22" x2="32" y2="22" stroke="currentColor" stroke-width="1.5"/></svg>',
-      '4k':'<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="18" y1="4" x2="18" y2="32" stroke="currentColor" stroke-width="1.5"/><line x1="18" y1="4" x2="18" y2="32" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="18" x2="32" y2="18" stroke="currentColor" stroke-width="1.5"/></svg>'
+      '4k':'<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="18" y1="4" x2="18" y2="32" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="18" x2="32" y2="18" stroke="currentColor" stroke-width="1.5"/></svg>'
     };
     return s[t]||'';
   }
@@ -162,46 +162,67 @@ function init(){
     }
   }
 
-  function sendRequest(payload){
-    return new Promise(function(resolve, reject){
-      var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      var timeoutId = setTimeout(function(){
-        if(ctrl) ctrl.abort();
-        reject(new Error('timeout'));
-      }, 10000);
-
-      var opts = {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload),
-        mode:'cors'
-      };
-      if(ctrl) opts.signal = ctrl.signal;
-
-      fetch(WEBHOOK, opts)
-        .then(function(r){
-          clearTimeout(timeoutId);
-          if(r.ok || r.status===200 || r.status===201 || r.status===204) resolve(true);
-          else reject(new Error('http_'+r.status));
-        })
-        .catch(function(err){
-          clearTimeout(timeoutId);
-          if(err && err.message === 'timeout') reject(err);
-          else resolve(true);
-        });
-    });
+  function fireInputEvents(input){
+    try { input.dispatchEvent(new Event('input', {bubbles:true})); } catch(e){}
+    try { input.dispatchEvent(new Event('change', {bubbles:true})); } catch(e){}
+    try { input.dispatchEvent(new Event('blur', {bubbles:true})); } catch(e){}
   }
 
-  function sendNoCors(payload){
-    try{
-      fetch(WEBHOOK, {
-        method:'POST',
-        mode:'no-cors',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload),
-        keepalive:true
-      });
-    }catch(e){}
+  function findTaptopForm(){
+    return document.querySelector('form[data-s3-anketa-id="' + TAPTOP_FORM_ANKETA_ID + '"]');
+  }
+
+  function submitViaTaptop(name, phone, calcText){
+    var form = findTaptopForm();
+    if(!form) return false;
+
+    // Поле Имя — это первое поле с data-type-field="text"
+    var nameInput = form.querySelector('[data-type-field="text"] input');
+    // Поле Email — мы кладём туда расчёт
+    var emailField = form.querySelector('[data-type-field="email"] input');
+    // Поле Телефон
+    var phoneInput = form.querySelector('[data-type-field="phone"] input');
+
+    if(!nameInput || !emailField || !phoneInput) return false;
+
+    // 1. Имя
+    nameInput.value = name;
+    fireInputEvents(nameInput);
+
+    // 2. Email-поле = расчёт калькулятора. Меняем тип email→text, чтобы пройти валидацию
+    try { emailField.setAttribute('type','text'); } catch(e){}
+    try { emailField.removeAttribute('required'); } catch(e){}
+    emailField.value = calcText;
+    fireInputEvents(emailField);
+
+    // 3. Телефон
+    phoneInput.value = phone;
+    fireInputEvents(phoneInput);
+
+    // 4. Сабмит — ищем submit-кнопку и кликаем по ней (надёжнее, чем form.submit())
+    var submitBtn = form.querySelector('button[type="submit"]');
+    if(submitBtn){
+      submitBtn.click();
+      return true;
+    }
+
+    // Fallback: requestSubmit / submit
+    try {
+      if(typeof form.requestSubmit === 'function') form.requestSubmit();
+      else form.submit();
+      return true;
+    } catch(e){ return false; }
+  }
+
+  function openTaptopPopup(){
+    // Поп-ап Tap-top становится видимым через display:flex на элементе .pop-up
+    var form = findTaptopForm();
+    if(!form) return false;
+    var popup = form.closest('.pop-up') || form.closest('[class*="pop-up"]');
+    if(popup){
+      popup.style.display = 'flex';
+    }
+    return true;
   }
 
   function submitForm(e){
@@ -225,20 +246,11 @@ function init(){
     status.textContent='Отправляем, пожалуйста подождите...';
 
     var rs=calc();
-    var commentLines = [
-      'Заявка с калькулятора',
-      typeNames[data.type] + ', ' + data.area + ' м\u00B2, ' + condNames[data.condition].toLowerCase(),
-      'Тип ремонта: ' + repairNames[data.repair],
-      'Расч\u0451т: ' + fmt(rs.min) + ' \u2014 ' + fmt(rs.max) + ' \u20BD',
-      'Срок: ' + rs.term + ' дней',
-      'Источник: utm_source=calculator&utm_medium=site_form'
-    ];
-    var payload = {
-      Name: phone,
-      client_name: name,
-      comment: commentLines.join('\n')
-    };
+    var calcText = typeNames[data.type] + ', ' + data.area + 'м\u00B2, ' + condNames[data.condition]
+                 + ', ' + repairNames[data.repair]
+                 + '. ' + fmt(rs.min) + '-' + fmt(rs.max) + ' \u20BD, ' + rs.term + ' дн.';
 
+    // Параметры расчёта в Метрику — менеджер увидит в карточке посетителя
     ymParams({
       calculator: {
         type: typeNames[data.type],
@@ -251,34 +263,24 @@ function init(){
       }
     });
 
-    function success(){
+    var ok = submitViaTaptop(name, phone, calcText);
+
+    if(ok){
       ymGoal('calculator_form_submit');
       ymGoal('calculator_complete');
+      // Tap-top сам покажет своё success-состояние внутри своей формы.
+      // Мы у себя на калькуляторе показываем благодарность.
       btn.disabled=false;
       btn.innerHTML=origBtnHtml;
       status.style.display='none';
-      sendNoCors(payload);
       step=5;
       render();
-    }
-
-    function showError(msg){
+    } else {
       btn.disabled=false;
       btn.innerHTML=origBtnHtml;
       status.style.color='#ef4444';
-      status.textContent=msg;
+      status.textContent='Не удалось отправить. Позвоните: +7 900 292 3615';
     }
-
-    sendRequest(payload)
-      .then(success)
-      .catch(function(err){
-        if(err && err.message === 'timeout'){
-          sendNoCors(payload);
-          setTimeout(success, 500);
-        } else {
-          showError('Не удалось отправить. Позвоните: +7 900 292 3615');
-        }
-      });
   }
 
   document.getElementById('m2c-back').onclick=function(){if(step>0){step--; render();}};
