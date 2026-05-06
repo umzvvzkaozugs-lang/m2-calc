@@ -172,58 +172,103 @@ function init(){
     return document.querySelector('form[data-s3-anketa-id="' + TAPTOP_FORM_ANKETA_ID + '"]');
   }
 
-  function submitViaTaptop(name, phone, calcText){
-    var form = findTaptopForm();
-    if(!form) return false;
+ function forceShowPopup(form){
+  // Tap-top скрывает поп-ап через display:none на родительском .pop-up.
+  // Чтобы submit прошёл, поп-ап должен быть display:flex.
+  // Делаем его видимым, но прозрачным и за экраном — клиент не увидит.
+  var popup = form.closest('.pop-up') || form.closest('[class*="pop-up"]');
+  if(!popup) return null;
 
-    // Поле Имя — это первое поле с data-type-field="text"
-    var nameInput = form.querySelector('[data-type-field="text"] input');
-    // Поле Email — мы кладём туда расчёт
-    var emailField = form.querySelector('[data-type-field="email"] input');
-    // Поле Телефон
-    var phoneInput = form.querySelector('[data-type-field="phone"] input');
+  var saved = {
+    display: popup.style.display,
+    visibility: popup.style.visibility,
+    opacity: popup.style.opacity,
+    pointerEvents: popup.style.pointerEvents,
+    position: popup.style.position,
+    left: popup.style.left,
+    top: popup.style.top,
+    zIndex: popup.style.zIndex
+  };
 
-    if(!nameInput || !emailField || !phoneInput) return false;
+  // Делаем поп-ап технически видимым, но не видным для пользователя
+  popup.style.display = 'flex';
+  popup.style.visibility = 'hidden';
+  popup.style.opacity = '0';
+  popup.style.pointerEvents = 'none';
+  popup.style.position = 'fixed';
+  popup.style.left = '-9999px';
+  popup.style.top = '-9999px';
+  popup.style.zIndex = '-1';
 
-    // 1. Имя
-    nameInput.value = name;
-    fireInputEvents(nameInput);
+  return {popup: popup, saved: saved};
+}
 
-    // 2. Email-поле = расчёт калькулятора. Меняем тип email→text, чтобы пройти валидацию
-    try { emailField.setAttribute('type','text'); } catch(e){}
-    try { emailField.removeAttribute('required'); } catch(e){}
-    emailField.value = calcText;
-    fireInputEvents(emailField);
+function restorePopup(state){
+  if(!state) return;
+  var p = state.popup, s = state.saved;
+  // Возвращаем поп-ап в скрытое состояние, чтобы клиент его не увидел при перезагрузке
+  p.style.display = 'none';
+  p.style.visibility = s.visibility || '';
+  p.style.opacity = s.opacity || '';
+  p.style.pointerEvents = s.pointerEvents || '';
+  p.style.position = s.position || '';
+  p.style.left = s.left || '';
+  p.style.top = s.top || '';
+  p.style.zIndex = s.zIndex || '';
+}
 
-    // 3. Телефон
-    phoneInput.value = phone;
-    fireInputEvents(phoneInput);
+function submitViaTaptop(name, phone, calcText){
+  var form = findTaptopForm();
+  if(!form) return false;
 
-    // 4. Сабмит — ищем submit-кнопку и кликаем по ней (надёжнее, чем form.submit())
-    var submitBtn = form.querySelector('button[type="submit"]');
-    if(submitBtn){
-      submitBtn.click();
-      return true;
-    }
+  // 1. Открываем поп-ап «технически» — делаем его видимым для submit, но невидимым для глаза
+  var popupState = forceShowPopup(form);
 
-    // Fallback: requestSubmit / submit
+  // 2. Находим поля
+  var nameInput = form.querySelector('[data-type-field="text"] input');
+  var emailField = form.querySelector('[data-type-field="email"] input');
+  var phoneInput = form.querySelector('[data-type-field="phone"] input');
+
+  if(!nameInput || !emailField || !phoneInput){
+    if(popupState) restorePopup(popupState);
+    return false;
+  }
+
+  // 3. Заполняем поля
+  nameInput.value = name;
+  fireInputEvents(nameInput);
+
+  try { emailField.setAttribute('type','text'); } catch(e){}
+  try { emailField.removeAttribute('required'); } catch(e){}
+  emailField.value = calcText;
+  fireInputEvents(emailField);
+
+  phoneInput.value = phone;
+  fireInputEvents(phoneInput);
+
+  // 4. Сабмит
+  var submitBtn = form.querySelector('button[type="submit"]');
+  var submitted = false;
+
+  if(submitBtn){
+    submitBtn.click();
+    submitted = true;
+  } else {
     try {
       if(typeof form.requestSubmit === 'function') form.requestSubmit();
       else form.submit();
-      return true;
-    } catch(e){ return false; }
+      submitted = true;
+    } catch(e){}
   }
 
-  function openTaptopPopup(){
-    // Поп-ап Tap-top становится видимым через display:flex на элементе .pop-up
-    var form = findTaptopForm();
-    if(!form) return false;
-    var popup = form.closest('.pop-up') || form.closest('[class*="pop-up"]');
-    if(popup){
-      popup.style.display = 'flex';
-    }
-    return true;
+  // 5. Через 3 сек прячем поп-ап обратно (Tap-top к этому времени должен обработать submit)
+  if(popupState){
+    setTimeout(function(){ restorePopup(popupState); }, 3000);
   }
+
+  return submitted;
+}
+
 
   function submitForm(e){
     e.preventDefault();
