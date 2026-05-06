@@ -148,7 +148,7 @@ function init(){
       html+='<form class="m2c-form" id="m2c-form">';
       html+='<input type="text" name="name" placeholder="Ваше имя" required>';
       html+='<input type="tel" name="phone" placeholder="Телефон для связи" required>';
-      html+='<label class="m2c-agree"><input type="checkbox" id="m2c-agree-cb" checked><span class="m2c-agree-t">Нажимая кнопку, я соглашаюсь с <a href="https://m2-nvrsk.ru/politika-konfidencialnosti" target="_blank">политикой конфиденциальности</a> и даю согласие на обработку персональных данных</span></label>';
+      html+='<label class="m2c-agree"><input type="checkbox" id="m2c-agree-cb"><span class="m2c-agree-t">Нажимая кнопку, я соглашаюсь с <a href="https://m2-nvrsk.ru/politika-konfidencialnosti" target="_blank">политикой конфиденциальности</a> и даю согласие на обработку персональных данных</span></label>';
       html+='<button type="submit" class="m2c-submit" id="m2c-submit">Получить точный расч\u0451т</button>';
       html+='<p class="m2c-r-note" id="m2c-form-status" style="margin-top:8px;display:none"></p>';
       html+='</form></div>';
