@@ -126,11 +126,11 @@
       } else if(step===4){
         ymGoal('calculator_result_shown');
         html+='<div class="m2c-result">';
-        html+='<p class="m2c-r-lbl">РАСЧЁТ СТОИМОСТИ ГОТОВ!</p>';
-        html+='<p class="m2c-r-price" style="font-size:26px;line-height:1.3;margin:16px 0;color:#fff;">Оставьте заявку, чтобы узнать стоимость ремонта</p>';
-        html+='<p class="m2c-r-note">Закрепим за вашим номером персональную скидку и пришлем детальную смету за 15 минут.</p>';
+        html+='<p class="m2c-r-lbl">ВАШ РАСЧЁТ СТОИМОСТИ ГОТОВ!</p>';
+        html+='<p class="m2c-r-price" style="font-size:32px;font-weight:700;line-height:1.3;margin:20px 0;color:#22c55e;">Оставьте заявку, чтобы узнать стоимость ремонта</p>';
+        html+='<p class="m2c-r-note" style="font-size:15px;color:rgba(255,255,255,.7);">Впишите свои данные ниже — мы закрепим за вашим номером скидку и пришлём готовую смету в течение 15 минут.</p>';
         html+='<div class="m2c-r-grid">';
-        html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Срок</p><p class="m2c-r-i-v">за 15 мин</p></div>';
+        html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Срок расчёта</p><p class="m2c-r-i-v">15 минут</p></div>';
         html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Гарантия</p><p class="m2c-r-i-v">3 года</p></div>';
         html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Договор</p><p class="m2c-r-i-v">Фикс смета</p></div>';
         html+='</div>';
