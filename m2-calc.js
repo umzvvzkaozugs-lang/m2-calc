@@ -137,19 +137,19 @@ function init(){
       var rs=calc();
       lastResult=rs;
       html+='<div class="m2c-result">';
-      html+='<p class="m2c-r-lbl">Расчёт готов!</p>';
-      html+='<p class="m2c-r-price">Узнайте точную стоимость</p>';
-      html+='<p class="m2c-r-note">Оставьте контакт — менеджер перезвонит за 30 минут и назовёт точную цену под ваш проект.</p>';
+      html+='<p class="m2c-r-lbl">СТОИМОСТЬ ВАШЕГО РЕМОНТА ГОТОВА!</p>';
+      html+='<p class="m2c-r-price" style="font-size:24px;line-height:1.3;margin:15px 0;">Оставьте заявку, чтобы узнать стоимость ремонта</p>';
+      html+='<p class="m2c-r-note">А также получите точную смету вашего проекта в течение 15 минут.</p>';
       html+='<div class="m2c-r-grid">';
-      html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Срок</p><p class="m2c-r-i-v">'+rs.term+' дней</p></div>';
+      html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Срок</p><p class="m2c-r-i-v">от 15 мин</p></div>';
       html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Гарантия</p><p class="m2c-r-i-v">3 года</p></div>';
       html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Договор</p><p class="m2c-r-i-v">Фикс смета</p></div>';
       html+='</div>';
       html+='<form class="m2c-form" id="m2c-form">';
       html+='<input type="text" name="name" placeholder="Ваше имя" required>';
       html+='<input type="tel" name="phone" placeholder="Телефон для связи" required>';
-      html+='<label class="m2c-agree"><input type="checkbox" id="m2c-agree-cb"><span class="m2c-agree-t">Нажимая кнопку, я соглашаюсь с <a href="https://m2-nvrsk.ru/politika-konfidencialnosti" target="_blank">политикой конфиденциальности</a> и даю согласие на обработку персональных данных</span></label>';
-      html+='<button type="submit" class="m2c-submit" id="m2c-submit">Получить точный расч\u0451т</button>';
+      html+='<label class="m2c-agree"><input type="checkbox" id="m2c-agree-cb" checked><span class="m2c-agree-t">Нажимая кнопку, я соглашаюсь с <a href="https://m2-nvrsk.ru/politika-konfidencialnosti" target="_blank">политикой конфиденциальности</a> и даю согласие на обработку персональных данных</span></label>';
+      html+='<button type="submit" class="m2c-submit" id="m2c-submit">Получить стоимость ремонта за 15 минут</button>';
       html+='<p class="m2c-r-note" id="m2c-form-status" style="margin-top:8px;display:none"></p>';
       html+='</form></div>';
       content.innerHTML=html;
@@ -158,7 +158,6 @@ function init(){
       document.getElementById('m2c-form').onsubmit=submitForm;
 
     } else if(step===5){
-      var rs2 = lastResult || {min:0,max:0,term:'-'};
       html+='<div class="m2c-success">';
       html+='<div class="m2c-s-icon">\u2713</div>';
       html+='<h3 class="m2c-s-t">Спасибо! Заявка принята</h3>';
@@ -172,8 +171,6 @@ function init(){
   }
 
   function sendInBackground(payload){
-    // Fire-and-forget. Не ждём ответа, не показываем ошибки клиенту.
-    // FormSubmit обычно отвечает за 5-30 сек, нам это не важно — мы уже показали "Спасибо".
     try {
       var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
       var timeoutId = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 25000);
@@ -190,7 +187,6 @@ function init(){
         clearTimeout(timeoutId);
       }).catch(function(err){
         clearTimeout(timeoutId);
-        // Если основной fetch упал — пробуем no-cors как страховку
         try {
           fetch(WEBHOOK, {
             method:'POST',
@@ -227,12 +223,11 @@ function init(){
       'Площадь':data.area+' м\u00B2',
       'Состояние':condNames[data.condition],
       'Тип ремонта':repairNames[data.repair],
-      'Расч\u0451тная стоимость':fmt(rs.min)+' \u2014 '+fmt(rs.max)+' \u20BD',
-      'Срок':rs.term+' дней',
+      'Скрытая расчетная стоимость для менеджера':fmt(rs.min)+' \u2014 '+fmt(rs.max)+' \u20BD',
+      'Срок выполнения ремонта':rs.term+' дней',
       'Источник':'Калькулятор сайта'
     };
 
-    // Параметры в Метрику
     ymParams({
       calculator: {
         type: typeNames[data.type],
@@ -247,14 +242,12 @@ function init(){
       }
     });
 
-    // Цели
     ymGoal('calculator_form_submit');
     ymGoal('calculator_complete');
 
-    // Отправка в фоне — клиент не ждёт ответа
     sendInBackground(payload);
 
-    // Сразу показываем "Спасибо" — это и есть главное исправление
+    // Мгновенный переход на шаг "Спасибо", не дожидаясь ответа сервера
     step=5;
     render();
   }
