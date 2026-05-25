@@ -1,6 +1,5 @@
 (function(){
 function init(){
-  if(window.m2cReady) return;
   if(!document.getElementById('m2c-root')) return;
   window.m2cReady = true;
 
