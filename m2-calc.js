@@ -137,9 +137,9 @@ function init(){
       var rs=calc();
       lastResult=rs;
       html+='<div class="m2c-result">';
-      html+='<p class="m2c-r-lbl">Стоимость вашего ремонта</p>';
-      html+='<p class="m2c-r-price">'+fmt(rs.min)+' \u2014 '+fmt(rs.max)+' \u20BD</p>';
-      html+='<p class="m2c-r-note">Это предварительная оценка. Менеджер рассчитает точную смету после бесплатного замера.</p>';
+      html+='<p class="m2c-r-lbl">Расчёт готов!</p>';
+      html+='<p class="m2c-r-price">Узнайте точную стоимость</p>';
+      html+='<p class="m2c-r-note">Оставьте контакт — менеджер перезвонит за 30 минут и назовёт точную цену под ваш проект.</p>';
       html+='<div class="m2c-r-grid">';
       html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Срок</p><p class="m2c-r-i-v">'+rs.term+' дней</p></div>';
       html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Гарантия</p><p class="m2c-r-i-v">3 года</p></div>';
