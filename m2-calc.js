@@ -53,7 +53,7 @@
       };
     }
 
-  function sendTelegram(name, phone, rs){
+    function sendTelegram(name, phone, rs){
       var text = '<b>🔨 Новая заявка с калькулятора M2</b>\n\n' +
         '👤 <b>Имя:</b> ' + name + '\n' +
         '📞 <b>Телефон:</b> ' + phone + '\n' +
@@ -65,13 +65,12 @@
         '⏱ <b>Срок:</b> ' + rs.term + ' дней\n\n' +
         '🌐 <b>Источник:</b> Калькулятор m2-nvrsk.ru';
 
-      // Кодируем текст, чтобы спецсимволы (пробелы, +, значки) не ломали ссылку
       var url = 'https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage?chat_id=' + TG_CHAT + '&text=' + encodeURIComponent(text) + '&parse_mode=HTML';
 
-      // Отправляем простой GET-запрос в фоновом режиме без блокировки CORS
       var img = new Image();
       img.src = url;
     }
+
     function render(){
       progBar();
       var content=document.getElementById('m2c-content');
@@ -189,14 +188,12 @@
 
       var rs=calc();
 
-      // Яндекс.Метрика
       if(typeof ym!=='undefined'){
         try{ym(YM_ID,'params',{calculator:{type:typeNames[data.type],area:data.area,condition:condNames[data.condition],repair:repairNames[data.repair],price_min:rs.min,price_max:rs.max,term:rs.term,client_name:name,client_phone:phone}});}catch(err){}
       }
       ymGoal('calculator_form_submit');
       ymGoal('calculator_complete');
 
-      // Отправка в Telegram и сразу переход на шаг 5
       sendTelegram(name, phone, rs);
       step=5;
       render();
