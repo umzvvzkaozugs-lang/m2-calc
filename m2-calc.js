@@ -35,25 +35,25 @@
       return s[t]||'';
     }
 
+    function toggleBtn(btn, disable) {
+      if(!btn) return;
+      btn.disabled = disable;
+      if(disable) {
+        btn.setAttribute('disabled', 'true');
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+      } else {
+        btn.removeAttribute('disabled');
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+    }
+
     function progBar(){
       var html='';
       for(var i=0;i<4;i++) html+='<div class="m2c-prog-s'+(i<=step?' on':'')+'"></div>';
       var p=document.getElementById('m2c-prog');
       if(p) p.innerHTML=html;
-    }
-
-    function unlockButton(btn, isFormValid) {
-      if (isFormValid) {
-        btn.disabled = false;
-        btn.removeAttribute('disabled');
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
-      } else {
-        btn.disabled = true;
-        btn.setAttribute('disabled', 'true');
-        btn.style.opacity = '0.5';
-        btn.style.pointerEvents = 'none';
-      }
     }
 
     function pickHandler(key){
@@ -63,9 +63,7 @@
         var opts=document.querySelectorAll('#m2c-content .m2c-opt');
         for(var i=0;i<opts.length;i++) opts[i].classList.remove('sel');
         this.classList.add('sel');
-        
-        var nextBtn = document.getElementById('m2c-next');
-        if(nextBtn) unlockButton(nextBtn, true);
+        toggleBtn(document.getElementById('m2c-next'), false);
       };
     }
 
@@ -77,48 +75,12 @@
         '📐 Площадь: ' + data.area + ' м²\n' +
         '🔧 Состояние: ' + condNames[data.condition] + '\n' +
         '✨ Тип ремонта: ' + repairNames[data.repair] + '\n' +
-        '💰 Расчёт: ' + fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽\n' +
+        '💰 Расчет: ' + fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽\n' +
         '⏱ Срок: ' + rs.term + ' дней\n\n' +
         '🌐 Источник: Калькулятор m2-nvrsk.ru';
 
       var url = 'https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage?chat_id=' + TG_CHAT + '&text=' + encodeURIComponent(text);
-
-      // mode: 'no-cors' заставляет браузер выстрелить запросом мгновенно, не дожидаясь проверки безопасности CORS и ответа сервера
       fetch(url, { method: 'GET', mode: 'no-cors' }).catch(function(){});
-    }
-
-    function submitForm(e){
-      e.preventDefault();
-      var f=e.target;
-      var name=f.name.value.trim();
-      var phone=f.phone.value.trim();
-      var agree=document.getElementById('m2c-agree-cb').checked;
-
-      if(name.length<2){alert('Введите имя'); return;}
-      if(phone.length<10){alert('Введите корректный телефон'); return;}
-      if(!agree){alert('Необходимо согласие на обработку персональных данных'); return;}
-
-      var btn=document.getElementById('m2c-submit');
-      if(btn) {
-        btn.disabled=true;
-        btn.textContent='Отправка...';
-      }
-
-      var rs=calc();
-
-      // Яндекс.Метрика (срабатывает мгновенно)
-      if(typeof ym!=='undefined'){
-        try{ym(YM_ID,'params',{calculator:{type:typeNames[data.type],area:data.area,condition:condNames[data.condition],repair:repairNames[data.repair],price_min:rs.min,price_max:rs.max,term:rs.term,client_name:name,client_phone:phone}});}catch(err){}
-      }
-      ymGoal('calculator_form_submit');
-      ymGoal('calculator_complete');
-
-      // 1. Стреляем в Telegram в фоновом режиме
-      sendTelegram(name, phone, rs);
-      
-      // 2. МГНОВЕННО переключаем интерфейс на Шаг 5 (Успех), не дожидаясь ответа сети
-      step=5;
-      render();
     }
 
     function render(){
@@ -141,7 +103,7 @@
         back.style.display='none';
         next.style.display='flex';
         next.textContent='Далее →';
-        unlockButton(next, !!data.type);
+        toggleBtn(next, !data.type);
         var btns=content.querySelectorAll('.m2c-opt');
         for(var j=0;j<btns.length;j++) btns[j].onclick=pickHandler('type');
 
@@ -154,7 +116,7 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Далее →';
-        unlockButton(next, true);
+        toggleBtn(next, false);
         document.getElementById('m2c-range').oninput=function(){
           data.area=parseInt(this.value);
           document.getElementById('m2c-area').textContent=data.area;
@@ -172,7 +134,7 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Далее →';
-        unlockButton(next, !!data.condition);
+        toggleBtn(next, !data.condition);
         var btns2=content.querySelectorAll('.m2c-opt');
         for(var l=0;l<btns2.length;l++) btns2[l].onclick=pickHandler('condition');
 
@@ -188,18 +150,18 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Рассчитать →';
-        unlockButton(next, !!data.repair);
+        toggleBtn(next, !data.repair);
         var btns3=content.querySelectorAll('.m2c-opt');
         for(var n=0;n<btns3.length;n++) btns3[n].onclick=pickHandler('repair');
 
       } else if(step===4){
         ymGoal('calculator_result_shown');
         html+='<div class="m2c-result">';
-        html+='<p class="m2c-r-lbl">ВАШ РАСЧЁТ СТОИМОСТИ ГОТОВ!</p>';
+        html+='<p class="m2c-r-lbl">ВАШ РАСЧЕТ СТОИМОСТИ ГОТОВ!</p>';
         html+='<p class="m2c-r-price" style="font-size:32px;font-weight:700;line-height:1.3;margin:20px 0;color:#22c55e;">Оставьте заявку, чтобы узнать стоимость ремонта</p>';
         html+='<p class="m2c-r-note" style="font-size:15px;color:rgba(255,255,255,.7);">Впишите свои данные ниже — мы закрепим за вашим номером скидку и пришлём готовую смету в течение 15 минут.</p>';
         html+='<div class="m2c-r-grid">';
-        html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Срок расчёта</p><p class="m2c-r-i-v">15 минут</p></div>';
+        html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Срок расчета</p><p class="m2c-r-i-v">15 минут</p></div>';
         html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Гарантия</p><p class="m2c-r-i-v">3 года</p></div>';
         html+='<div class="m2c-r-item"><p class="m2c-r-i-l">Договор</p><p class="m2c-r-i-v">Фикс смета</p></div>';
         html+='</div>';
@@ -233,8 +195,10 @@
       if(!agree){alert('Необходимо согласие на обработку персональных данных'); return;}
 
       var btn=document.getElementById('m2c-submit');
-      btn.disabled=true;
-      btn.textContent='Отправка...';
+      if(btn) {
+        btn.disabled=true;
+        btn.textContent='Отправка...';
+      }
 
       var rs=calc();
 
