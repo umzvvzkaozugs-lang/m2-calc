@@ -81,14 +81,44 @@
         '⏱ Срок: ' + rs.term + ' дней\n\n' +
         '🌐 Источник: Калькулятор m2-nvrsk.ru';
 
-      fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          chat_id: TG_CHAT, 
-          text: text
-        })
-      }).catch(function(){});
+      var url = 'https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage?chat_id=' + TG_CHAT + '&text=' + encodeURIComponent(text);
+
+      // mode: 'no-cors' заставляет браузер выстрелить запросом мгновенно, не дожидаясь проверки безопасности CORS и ответа сервера
+      fetch(url, { method: 'GET', mode: 'no-cors' }).catch(function(){});
+    }
+
+    function submitForm(e){
+      e.preventDefault();
+      var f=e.target;
+      var name=f.name.value.trim();
+      var phone=f.phone.value.trim();
+      var agree=document.getElementById('m2c-agree-cb').checked;
+
+      if(name.length<2){alert('Введите имя'); return;}
+      if(phone.length<10){alert('Введите корректный телефон'); return;}
+      if(!agree){alert('Необходимо согласие на обработку персональных данных'); return;}
+
+      var btn=document.getElementById('m2c-submit');
+      if(btn) {
+        btn.disabled=true;
+        btn.textContent='Отправка...';
+      }
+
+      var rs=calc();
+
+      // Яндекс.Метрика (срабатывает мгновенно)
+      if(typeof ym!=='undefined'){
+        try{ym(YM_ID,'params',{calculator:{type:typeNames[data.type],area:data.area,condition:condNames[data.condition],repair:repairNames[data.repair],price_min:rs.min,price_max:rs.max,term:rs.term,client_name:name,client_phone:phone}});}catch(err){}
+      }
+      ymGoal('calculator_form_submit');
+      ymGoal('calculator_complete');
+
+      // 1. Стреляем в Telegram в фоновом режиме
+      sendTelegram(name, phone, rs);
+      
+      // 2. МГНОВЕННО переключаем интерфейс на Шаг 5 (Успех), не дожидаясь ответа сети
+      step=5;
+      render();
     }
 
     function render(){
