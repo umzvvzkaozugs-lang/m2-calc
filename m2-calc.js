@@ -53,7 +53,7 @@
       };
     }
 
-   function sendTelegram(name, phone, rs){
+  function sendTelegram(name, phone, rs){
       var text = '<b>🔨 Новая заявка с калькулятора M2</b>\n\n' +
         '👤 <b>Имя:</b> ' + name + '\n' +
         '📞 <b>Телефон:</b> ' + phone + '\n' +
@@ -65,25 +65,13 @@
         '⏱ <b>Срок:</b> ' + rs.term + ' дней\n\n' +
         '🌐 <b>Источник:</b> Калькулятор m2-nvrsk.ru';
 
-      fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          chat_id: TG_CHAT, 
-          text: text, 
-          parse_mode: 'HTML'
-        })
-      })
-      .then(function(response) {
-        if (!response.ok) {
-          return response.json().then(function(err) { console.error('TG Error:', err); });
-        }
-      })
-      .catch(function(error){
-        console.error('Fetch Error:', error);
-      });
-    }
+      // Кодируем текст, чтобы спецсимволы (пробелы, +, значки) не ломали ссылку
+      var url = 'https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage?chat_id=' + TG_CHAT + '&text=' + encodeURIComponent(text) + '&parse_mode=HTML';
 
+      // Отправляем простой GET-запрос в фоновом режиме без блокировки CORS
+      var img = new Image();
+      img.src = url;
+    }
     function render(){
       progBar();
       var content=document.getElementById('m2c-content');
