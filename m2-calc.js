@@ -5,6 +5,8 @@
     window.m2cReadyInitialized = true;
 
     var WEBHOOK = 'https://formsubmit.co/ajax/daovladimir_01@mail.ru';
+    var TG_TOKEN = '8623096087:AAH9kODPN7dBrVrIFxRVS9Amykb8D_4B_rI';
+    var TG_CHAT  = '982657372';
     var YM_ID = 108662561;
     var prices = {cosmetic:6500, comfort:14000, design:22000};
     var typeMult = {studio:1, '1k':1, '2k':1.05, '3k':1.1, '4k':1.2};
@@ -50,6 +52,24 @@
         this.classList.add('sel');
         document.getElementById('m2c-next').disabled=false;
       };
+    }
+
+    function sendTelegram(name, phone, rs){
+      var text = '🔨 *Новая заявка с калькулятора M2*\n\n' +
+        '👤 Имя: ' + name + '\n' +
+        '📞 Телефон: ' + phone + '\n' +
+        '🏠 Квартира: ' + typeNames[data.type] + '\n' +
+        '📐 Площадь: ' + data.area + ' м²\n' +
+        '🔧 Состояние: ' + condNames[data.condition] + '\n' +
+        '✨ Тип ремонта: ' + repairNames[data.repair] + '\n' +
+        '💰 Расчёт: ' + fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽\n' +
+        '⏱ Срок: ' + rs.term + ' дней\n' +
+        '🌐 Источник: Калькулятор m2-nvrsk.ru';
+      fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({chat_id: TG_CHAT, text: text, parse_mode: 'Markdown'})
+      }).catch(function(){});
     }
 
     function render(){
@@ -168,6 +188,10 @@
       btn.textContent='Отправка...';
       
       var rs=calc();
+
+      // Отправка в Telegram
+      sendTelegram(name, phone, rs);
+
       var payload={
         _subject:'Заявка с калькулятора - M2 Новороссийск',
         _template:'table',
