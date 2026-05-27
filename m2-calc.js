@@ -35,22 +35,25 @@
       return s[t]||'';
     }
 
-    function toggleNextBtn(btn, disable) {
-      btn.disabled = disable;
-      if (disable) {
-        btn.style.opacity = '0.4';
-        btn.style.pointerEvents = 'none';
-      } else {
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
-      }
-    }
-
     function progBar(){
       var html='';
       for(var i=0;i<4;i++) html+='<div class="m2c-prog-s'+(i<=step?' on':'')+'"></div>';
       var p=document.getElementById('m2c-prog');
       if(p) p.innerHTML=html;
+    }
+
+    function unlockButton(btn, isFormValid) {
+      if (isFormValid) {
+        btn.disabled = false;
+        btn.removeAttribute('disabled');
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      } else {
+        btn.disabled = true;
+        btn.setAttribute('disabled', 'true');
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+      }
     }
 
     function pickHandler(key){
@@ -60,26 +63,32 @@
         var opts=document.querySelectorAll('#m2c-content .m2c-opt');
         for(var i=0;i<opts.length;i++) opts[i].classList.remove('sel');
         this.classList.add('sel');
-        toggleNextBtn(document.getElementById('m2c-next'), false);
+        
+        var nextBtn = document.getElementById('m2c-next');
+        if(nextBtn) unlockButton(nextBtn, true);
       };
     }
 
     function sendTelegram(name, phone, rs){
-      var text = '<b>🔨 Новая заявка с калькулятора M2</b>\n\n' +
-        '👤 <b>Имя:</b> ' + name + '\n' +
-        '📞 <b>Телефон:</b> ' + phone + '\n' +
-        '🏠 <b>Квартира:</b> ' + typeNames[data.type] + '\n' +
-        '📐 <b>Площадь:</b> ' + data.area + ' м²\n' +
-        '🔧 <b>Состояние:</b> ' + condNames[data.condition] + '\n' +
-        '✨ <b>Тип ремонта:</b> ' + repairNames[data.repair] + '\n' +
-        '💰 <b>Расчёт:</b> ' + fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽\n' +
-        '⏱ <b>Срок:</b> ' + rs.term + ' дней\n\n' +
-        '🌐 <b>Источник:</b> Калькулятор m2-nvrsk.ru';
+      var text = '🔨 Новая заявка с калькулятора M2\n\n' +
+        '👤 Имя: ' + name + '\n' +
+        '📞 Телефон: ' + phone + '\n' +
+        '🏠 Квартира: ' + typeNames[data.type] + '\n' +
+        '📐 Площадь: ' + data.area + ' м²\n' +
+        '🔧 Состояние: ' + condNames[data.condition] + '\n' +
+        '✨ Тип ремонта: ' + repairNames[data.repair] + '\n' +
+        '💰 Расчёт: ' + fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽\n' +
+        '⏱ Срок: ' + rs.term + ' дней\n\n' +
+        '🌐 Источник: Калькулятор m2-nvrsk.ru';
 
-      var url = 'https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage?chat_id=' + TG_CHAT + '&text=' + encodeURIComponent(text) + '&parse_mode=HTML';
-
-      var img = new Image();
-      img.src = url;
+      fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          chat_id: TG_CHAT, 
+          text: text
+        })
+      }).catch(function(){});
     }
 
     function render(){
@@ -102,7 +111,7 @@
         back.style.display='none';
         next.style.display='flex';
         next.textContent='Далее →';
-        toggleNextBtn(next, !data.type);
+        unlockButton(next, !!data.type);
         var btns=content.querySelectorAll('.m2c-opt');
         for(var j=0;j<btns.length;j++) btns[j].onclick=pickHandler('type');
 
@@ -115,7 +124,7 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Далее →';
-        toggleNextBtn(next, false);
+        unlockButton(next, true);
         document.getElementById('m2c-range').oninput=function(){
           data.area=parseInt(this.value);
           document.getElementById('m2c-area').textContent=data.area;
@@ -133,7 +142,7 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Далее →';
-        toggleNextBtn(next, !data.condition);
+        unlockButton(next, !!data.condition);
         var btns2=content.querySelectorAll('.m2c-opt');
         for(var l=0;l<btns2.length;l++) btns2[l].onclick=pickHandler('condition');
 
@@ -149,7 +158,7 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Рассчитать →';
-        toggleNextBtn(next, !data.repair);
+        unlockButton(next, !!data.repair);
         var btns3=content.querySelectorAll('.m2c-opt');
         for(var n=0;n<btns3.length;n++) btns3[n].onclick=pickHandler('repair');
 
