@@ -53,22 +53,35 @@
       };
     }
 
-    function sendTelegram(name, phone, rs){
-      var text = '🔨 *Новая заявка с калькулятора M2*\n\n' +
-        '👤 Имя: ' + name + '\n' +
-        '📞 Телефон: ' + phone + '\n' +
-        '🏠 Квартира: ' + typeNames[data.type] + '\n' +
-        '📐 Площадь: ' + data.area + ' м²\n' +
-        '🔧 Состояние: ' + condNames[data.condition] + '\n' +
-        '✨ Тип ремонта: ' + repairNames[data.repair] + '\n' +
-        '💰 Расчёт: ' + fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽\n' +
-        '⏱ Срок: ' + rs.term + ' дней\n' +
-        '🌐 Источник: Калькулятор m2-nvrsk.ru';
+   function sendTelegram(name, phone, rs){
+      var text = '<b>🔨 Новая заявка с калькулятора M2</b>\n\n' +
+        '👤 <b>Имя:</b> ' + name + '\n' +
+        '📞 <b>Телефон:</b> ' + phone + '\n' +
+        '🏠 <b>Квартира:</b> ' + typeNames[data.type] + '\n' +
+        '📐 <b>Площадь:</b> ' + data.area + ' м²\n' +
+        '🔧 <b>Состояние:</b> ' + condNames[data.condition] + '\n' +
+        '✨ <b>Тип ремонта:</b> ' + repairNames[data.repair] + '\n' +
+        '💰 <b>Расчёт:</b> ' + fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽\n' +
+        '⏱ <b>Срок:</b> ' + rs.term + ' дней\n\n' +
+        '🌐 <b>Источник:</b> Калькулятор m2-nvrsk.ru';
+
       fetch('https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({chat_id: TG_CHAT, text: text, parse_mode: 'Markdown'})
-      }).catch(function(){});
+        body: JSON.stringify({
+          chat_id: TG_CHAT, 
+          text: text, 
+          parse_mode: 'HTML'
+        })
+      })
+      .then(function(response) {
+        if (!response.ok) {
+          return response.json().then(function(err) { console.error('TG Error:', err); });
+        }
+      })
+      .catch(function(error){
+        console.error('Fetch Error:', error);
+      });
     }
 
     function render(){
