@@ -4,7 +4,6 @@
     if(!document.getElementById('m2c-root')) return;
     window.m2cReadyInitialized = true;
 
-    var WEBHOOK = 'https://formsubmit.co/ajax/daovladimir_01@mail.ru';
     var TG_TOKEN = '8623096087:AAH9kODPN7dBrVrIFxRVS9Amykb8D_4B_rI';
     var TG_CHAT  = '982657372';
     var YM_ID = 108662561;
@@ -182,69 +181,24 @@
       if(name.length<2){alert('Введите имя'); return;}
       if(phone.length<10){alert('Введите корректный телефон'); return;}
       if(!agree){alert('Необходимо согласие на обработку персональных данных'); return;}
-      
+
       var btn=document.getElementById('m2c-submit');
       btn.disabled=true;
       btn.textContent='Отправка...';
-      
+
       var rs=calc();
 
-      // Отправка в Telegram
-      sendTelegram(name, phone, rs);
-
-      var payload={
-        _subject:'Заявка с калькулятора - M2 Новороссийск',
-        _template:'table',
-        _captcha:'false',
-        'Имя':name,
-        'Телефон':phone,
-        'Тип квартиры':typeNames[data.type],
-        'Площадь':data.area+' м²',
-        'Состояние':condNames[data.condition],
-        'Тип ремонта':repairNames[data.repair],
-        'Скрытая расчетная стоимость для менеджера':fmt(rs.min)+' — '+fmt(rs.max)+' ₽',
-        'Срок выполнения ремонта':rs.term+' дней',
-        'Источник':'Калькулятор сайта'
-      };
-
+      // Яндекс.Метрика
       if(typeof ym!=='undefined'){
-        try {
-          ym(YM_ID,'params',{
-            calculator: {
-              type: typeNames[data.type],
-              area: data.area,
-              condition: condNames[data.condition],
-              repair: repairNames[data.repair],
-              price_min: rs.min,
-              price_max: rs.max,
-              term: rs.term,
-              client_name: name,
-              client_phone: phone
-            }
-          });
-        } catch(err){}
+        try{ym(YM_ID,'params',{calculator:{type:typeNames[data.type],area:data.area,condition:condNames[data.condition],repair:repairNames[data.repair],price_min:rs.min,price_max:rs.max,term:rs.term,client_name:name,client_phone:phone}});}catch(err){}
       }
+      ymGoal('calculator_form_submit');
+      ymGoal('calculator_complete');
 
-      fetch(WEBHOOK,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify(payload)
-      })
-      .then(function(){
-        ymGoal('calculator_form_submit'); 
-        ymGoal('calculator_complete'); 
-        step=5; 
-        render();
-      })
-      .catch(function(){
-        try {
-          fetch(WEBHOOK, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-        } catch(ce){}
-        ymGoal('calculator_form_submit');
-        ymGoal('calculator_complete');
-        step=5;
-        render();
-      });
+      // Отправка в Telegram и сразу переход на шаг 5
+      sendTelegram(name, phone, rs);
+      step=5;
+      render();
     }
 
     document.getElementById('m2c-back').onclick=function(){if(step>0){step--; render();}};
