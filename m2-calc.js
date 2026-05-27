@@ -35,6 +35,17 @@
       return s[t]||'';
     }
 
+    function toggleNextBtn(btn, disable) {
+      btn.disabled = disable;
+      if (disable) {
+        btn.style.opacity = '0.4';
+        btn.style.pointerEvents = 'none';
+      } else {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+    }
+
     function progBar(){
       var html='';
       for(var i=0;i<4;i++) html+='<div class="m2c-prog-s'+(i<=step?' on':'')+'"></div>';
@@ -49,7 +60,7 @@
         var opts=document.querySelectorAll('#m2c-content .m2c-opt');
         for(var i=0;i<opts.length;i++) opts[i].classList.remove('sel');
         this.classList.add('sel');
-        document.getElementById('m2c-next').disabled=false;
+        toggleNextBtn(document.getElementById('m2c-next'), false);
       };
     }
 
@@ -91,7 +102,7 @@
         back.style.display='none';
         next.style.display='flex';
         next.textContent='Далее →';
-        next.disabled=!data.type;
+        toggleNextBtn(next, !data.type);
         var btns=content.querySelectorAll('.m2c-opt');
         for(var j=0;j<btns.length;j++) btns[j].onclick=pickHandler('type');
 
@@ -104,7 +115,7 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Далее →';
-        next.disabled=false;
+        toggleNextBtn(next, false);
         document.getElementById('m2c-range').oninput=function(){
           data.area=parseInt(this.value);
           document.getElementById('m2c-area').textContent=data.area;
@@ -122,7 +133,7 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Далее →';
-        next.disabled=!data.condition;
+        toggleNextBtn(next, !data.condition);
         var btns2=content.querySelectorAll('.m2c-opt');
         for(var l=0;l<btns2.length;l++) btns2[l].onclick=pickHandler('condition');
 
@@ -138,7 +149,7 @@
         back.style.display='block';
         next.style.display='flex';
         next.textContent='Рассчитать →';
-        next.disabled=!data.repair;
+        toggleNextBtn(next, !data.repair);
         var btns3=content.querySelectorAll('.m2c-opt');
         for(var n=0;n<btns3.length;n++) btns3[n].onclick=pickHandler('repair');
 
