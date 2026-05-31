@@ -4,8 +4,7 @@
     if(!document.getElementById('m2c-root')) return;
     window.m2cReadyInitialized = true;
 
-    var TG_TOKEN = '8623096087:AAH9kODPN7dBrVrIFxRVS9Amykb8D_4B_rI';
-    var TG_CHAT  = '982657372';
+    var ALBATO_URL = 'https://h.albato.ru/wh/38/1lfdal7/j0yLMXtDYLWSsqsCoc_siTb4eTAuz4ZDI_FGDL1DHA0/';
     var YM_ID = 108662561;
     var prices = {cosmetic:6500, comfort:14000, design:22000};
     var typeMult = {studio:1, '1k':1, '2k':1.05, '3k':1.1, '4k':1.2};
@@ -65,22 +64,6 @@
         this.classList.add('sel');
         toggleBtn(document.getElementById('m2c-next'), false);
       };
-    }
-
-    function sendTelegram(name, phone, rs){
-      var text = '🔨 Новая заявка с калькулятора M2\n\n' +
-        '👤 Имя: ' + name + '\n' +
-        '📞 Телефон: ' + phone + '\n' +
-        '🏠 Квартира: ' + typeNames[data.type] + '\n' +
-        '📐 Площадь: ' + data.area + ' м²\n' +
-        '🔧 Состояние: ' + condNames[data.condition] + '\n' +
-        '✨ Тип ремонта: ' + repairNames[data.repair] + '\n' +
-        '💰 Расчет: ' + fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽\n' +
-        '⏱ Срок: ' + rs.term + ' дней\n\n' +
-        '🌐 Источник: Калькулятор m2-nvrsk.ru';
-
-      var url = 'https://api.telegram.org/bot' + TG_TOKEN + '/sendMessage?chat_id=' + TG_CHAT + '&text=' + encodeURIComponent(text);
-      fetch(url, { method: 'GET', mode: 'no-cors' }).catch(function(){});
     }
 
     function render(){
@@ -167,13 +150,25 @@
         html+='</div>';
         html+='<form class="m2c-form" id="m2c-form">';
         html+='<input type="text" name="name" placeholder="Ваше имя" required>';
-        html+='<input type="tel" name="phone" placeholder="Телефон для связи" required>';
-        html+='<label class="m2c-agree"><input type="checkbox" id="m2c-agree-cb" checked><span class="m2c-agree-t">Нажимая кнопку, я соглашаюсь с <a href="https://m2-nvrsk.ru/politika-konfidencialnosti" target="_blank">политикой конфиденциальности</a> и даю согласие на обработку персональных данных</span></label>';
+        html+='<input type="tel" name="phone" id="m2c-phone" placeholder="Телефон для связи" required>';
+        html+='<label class="m2c-agree"><input type="checkbox" id="m2c-agree-cb" required><span class="m2c-agree-t">Нажимая кнопку, я соглашаюсь с <a href="https://m2-nvrsk.ru/politika-konfidencialnosti" target="_blank">политикой конфиденциальности</a> и даю согласие на обработку персональных данных</span></label>';
         html+='<button type="submit" class="m2c-submit" id="m2c-submit">Получить стоимость ремонта за 15 минут</button>';
         html+='</form></div>';
         content.innerHTML=html;
         back.style.display='block';
         next.style.display='none';
+
+        var pInput = document.getElementById('m2c-phone');
+        if (pInput) {
+          pInput.addEventListener('input', function () {
+            let matrix = "+7 (___) ___-__-__", i = 0, def = matrix.replace(/\D/g, ""), val = this.value.replace(/\D/g, "");
+            if (def.length >= val.length) val = def;
+            this.value = matrix.replace(/./g, function (a) {
+                return /[_\d]/.test(a) && i < val.length ? val.charAt(i++) : i >= val.length ? "" : a;
+            });
+          });
+        }
+
         document.getElementById('m2c-form').onsubmit=submitForm;
 
       } else if(step===5){
@@ -191,7 +186,7 @@
       var agree=document.getElementById('m2c-agree-cb').checked;
 
       if(name.length<2){alert('Введите имя'); return;}
-      if(phone.length<10){alert('Введите корректный телефон'); return;}
+      if(phone.length<18){alert('Введите корректный телефон'); return;}
       if(!agree){alert('Необходимо согласие на обработку персональных данных'); return;}
 
       var btn=document.getElementById('m2c-submit');
@@ -202,15 +197,42 @@
 
       var rs=calc();
 
+      var leadData = {
+        name: name,
+        phone: phone,
+        area: data.area,
+        type: typeNames[data.type],
+        condition: condNames[data.condition],
+        repair: repairNames[data.repair],
+        total: fmt(rs.min) + ' — ' + fmt(rs.max) + ' ₽',
+        term: rs.term + ' дней',
+        source: 'Середина сайта (Многошаговый)'
+      };
+
       if(typeof ym!=='undefined'){
-        try{ym(YM_ID,'params',{calculator:{type:typeNames[data.type],area:data.area,condition:condNames[data.condition],repair:repairNames[data.repair],price_min:rs.min,price_max:rs.max,term:rs.term,client_name:name,client_phone:phone}});}catch(err){}
+        try{ym(YM_ID,'params',{calculator_middle:{type:leadData.type,area:leadData.area,condition:leadData.condition,repair:leadData.repair,price_range:leadData.total,client_name:name,client_phone:phone}});}catch(err){}
       }
       ymGoal('calculator_form_submit');
       ymGoal('calculator_complete');
 
-      sendTelegram(name, phone, rs);
-      step=5;
-      render();
+      fetch(ALBATO_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(leadData)
+      })
+      .then(response => {
+        if (response.ok) {
+          step=5;
+          render();
+        } else { throw new Error(); }
+      })
+      .catch(() => {
+        alert('Ошибка сети. Попробуйте отправить заявку позже.');
+        if(btn) {
+          btn.disabled=false;
+          btn.textContent='Получить стоимость ремонта за 15 минут';
+        }
+      });
     }
 
     document.getElementById('m2c-back').onclick=function(){if(step>0){step--; render();}};
